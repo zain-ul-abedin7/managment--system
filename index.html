@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Employee Management System</h1>
+
+    <div class="card">
+        <h2 id="formTitle">Add Employee</h2>
+        <form id="employeeForm">    
+            <div class="field">
+                <input name="name" id="name" placeholder="Name" required pattern="^[A-Za-z ]{2,50}$">
+                <p class="field-error" id="nameError"></p>
+            </div>
+            <div class="field">
+                <input type="email" id="email" name="email" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" required placeholder="Email">
+                <p class="field-error" id="emailError"></p>
+            </div>
+            <div class="field">
+                <select name="department_id" id="department_id" required>
+                    <option value="">Select Department</option>
+                    <option value="1">Engineering</option>
+                    <option value="2">Human Resources</option>
+                    <option value="3">Finance</option>
+                    <option value="4">Information Technology (IT)</option>
+                    <option value="5">Accounting</option>
+                    <option value="6">Marketing</option>
+                    <option value="7">Sales</option>
+                    <option value="8">Customer Service</option>
+                    <option value="9">Operations</option>
+                    <option value="10">Legal</option>
+                </select>
+                <p class="field-error" id="department_idError"></p>
+            </div>
+            <div class="field">
+                <select name="role_id" id="role_id" required>
+                    <option value="">Select Role</option>
+                    <option value="1">Admin</option>
+                    <option value="2">Developer</option>
+                    <option value="3">Manager</option>
+                    <option value="4">Engineer</option>
+                    <option value="5">Coordinators</option>
+                </select>
+                <p class="field-error" id="role_idError"></p>
+            </div>
+            <div class="field phone-field">
+                <div class="phone-input-group">
+                    <select name="country_code" id="country_code" required>
+                        <option value="">Code</option>
+                        <option value="+1">+1 (US/CA)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+92">+92 (PK)</option>
+                        <option value="+971">+971 (UAE)</option>
+                        <option value="+91">+91 (IN)</option>
+                        <option value="+61">+61 (AU)</option>
+                    </select>
+                    <input type="text" id="mobile_number" name="mobile_number" pattern="^[0-9]{7,12}$" required placeholder="Mobile Digits (e.g. 3326533310)">
+                </div>
+                <p class="field-error" id="mobile_numberError"></p>
+            </div>
+
+            <div class="btn-group">
+                <button id="submitBtn" type="submit">Add Employee</button>
+                <button id="cancelBtn" type="reset" class="secondary hidden">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="stats">
+            <div class="stat"><span class="stat-value" id="totalEmployees">0</span><span class="stat-label">Total Employees</span></div>
+            <div class="stat"><span class="stat-value" id="totalDepartments">0</span><span class="stat-label">Total Departments</span></div>
+        </div>
+        <div class="top">
+            <h2>Employees</h2>
+            <input id="search" placeholder="Search by name, email, department, mobile...">
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th>Mobile</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<template id="employeeRowTemplate">
+    <tr>
+        <td data-label="Name" class="emp-name"></td>
+        <td data-label="Email" class="emp-email"></td>
+        <td data-label="Department" class="emp-department"></td>
+        <td data-label="Role" class="emp-role"></td>
+        <td data-label="Mobile" class="emp-number"></td>
+        <td data-label="Action">
+            <button class="edit" type="button">Edit</button>
+            <button class="delete" type="button">Delete</button>
+        </td>
+    </tr>
+</template>
+
+<div id="deleteModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h3>Delete Employee?</h3>
+        <p>This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button id="cancelDeleteBtn" type="button" class="secondary">Cancel</button>
+            <button id="confirmDeleteBtn" type="button" class="delete">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+
+</body>
+</html>
