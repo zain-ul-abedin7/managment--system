@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -37,7 +39,7 @@ app.get('/api/health', async (req, res) => {
         await prisma.$queryRaw`SELECT 1`;
         res.json({ status: 'ok' });
     } catch (err) {
-        res.status(503).json({ error: err.message });
+        res.status(503).json({ error: err.message || String(err) });
     }
 });
 
