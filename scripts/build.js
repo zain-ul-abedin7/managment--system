@@ -11,6 +11,8 @@ run('npx prisma generate');
 if (process.env.DATABASE_URL) {
   // Ensure tables are created/updated in hosted DB during deployment builds.
   run('npx prisma db push --accept-data-loss');
+  // Seed departments/roles referenced by the form's dropdown IDs.
+  run('node prisma/seed.js');
 } else {
   console.log('DATABASE_URL not set. Skipping prisma db push.');
 }
