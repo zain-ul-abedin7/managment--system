@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id          Int        @id @default(autoincrement())
+  code        String     @unique @db.VarChar(10)
+  name        String     @unique @db.VarChar(50)
+  location_id Int?
+  status      String     @default("active") @db.VarChar(10)
+  created_at  DateTime?  @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?  @default(now()) @updatedAt @db.Timestamp(0)
+  employees   Employee[]
+
+  @@map("departments")
+}
+
+model Role {
+  id          Int        @id @default(autoincrement())
+  title       String     @unique @db.VarChar(50)
+  description String?    @db.Text
+  status      String     @default("active") @db.VarChar(10)
+  created_at  DateTime?  @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?  @default(now()) @updatedAt @db.Timestamp(0)
+  employees   Employee[]
+
+  @@map("roles")
+}
+
+model Employee {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(50)
+  email         String    @unique @db.VarChar(255)
+  country_code  String    @default("+1") @db.VarChar(5)
+  mobile_number String    @unique @db.VarChar(15)
+  department_id Int
+  role_id       Int
+  hire_date     DateTime? @db.Date
+  status        String    @default("active") @db.VarChar(10)
+  created_at    DateTime? @default(now()) @db.Timestamp(0)
+  updated_at    DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+
+  department Department @relation(fields: [department_id], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@map("employees")
+}

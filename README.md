@@ -39,15 +39,44 @@ To install the Node dependencies and run the API outside Docker, use
 `npm install` followed by `npm start`. This also requires a MySQL server with
 the `employee_management` schema initialized from `database/emp.sql`.
 
-## Deployment
+## Deployment (Vercel + Prisma)
 
-The full Docker Compose stack is suitable for a Docker host (for example, a
-VPS or a container platform that supports Compose), but Vercel does not run
-Docker Compose services. The frontend can be hosted on Vercel as static files,
-but this project’s Express API must first be adapted to Vercel Functions, and
-MySQL must be hosted separately using a reachable managed database. For the
-simplest deployment of the current full-stack app, use a Docker-capable host
-and configure strong database credentials.
+This project now includes Vercel serverless API routes in `api/` that use
+Prisma, so you can deploy on Vercel without running a local MySQL process.
+
+### 1. Create a hosted MySQL database (free tier)
+
+Use any provider that gives a public MySQL endpoint (for example PlanetScale,
+Aiven free trial, or another MySQL-compatible serverless/free-tier provider).
+
+1. Create database `employee_management`.
+2. Import `database/emp.sql`.
+3. Copy the MySQL connection string.
+
+### 2. Configure environment variables in Vercel
+
+Set this variable in your Vercel project settings:
+
+- `DATABASE_URL` = `mysql://USER:PASSWORD@HOST:3306/employee_management`
+
+### 3. Deploy
+
+1. Push this repo to GitHub.
+2. Import the repo into Vercel.
+3. Deploy.
+
+`postinstall` runs `prisma generate` automatically during build.
+
+### 4. Verify after deploy
+
+- `GET /api/health` should return `{ "status": "ok" }`.
+- Open the app root URL and test create/edit/delete employee.
+
+## Local Development Notes
+
+- `server.js` still works for local non-Vercel runtime with direct MySQL envs
+   (`DB_HOST`, `DB_USER`, etc.).
+- Vercel uses `api/` serverless functions and `DATABASE_URL` with Prisma.
 
 ## Technologies Used
 
