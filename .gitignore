@@ -18,6 +18,7 @@ pnpm-debug.log*
 coverage/
 dist/
 build/
+public/
 .nyc_output/
 
 # Local databases and backups
