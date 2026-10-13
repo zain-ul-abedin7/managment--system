@@ -24,14 +24,19 @@ form.addEventListener("submit", async e => {
     const data = Object.fromEntries(new FormData(form));
     const id = form.dataset.editId;
 
-    if (id) {
-        await updateEmployee(id, data);
-    } else {
-        await createEmployee(data);
-    }
+    try {
+        if (id) {
+            await updateEmployee(id, data);
+        } else {
+            await createEmployee(data);
+        }
 
-    form.reset();
-    await saveAndRender();
+        form.reset();
+        await saveAndRender();
+    } catch (err) {
+        alert(`Save failed: ${err.message}`);
+        console.error('Save failed:', err);
+    }
 });
 
 form.addEventListener("reset", () => {
@@ -76,10 +81,15 @@ document.addEventListener("click", async e => {
     }
 
     if (e.target.id === "confirmDeleteBtn") {
-        if (deleteTargetId) {
-            await deleteEmployee(deleteTargetId);
-            if (form.dataset.editId == deleteTargetId) form.reset();
-            await saveAndRender();
+        try {
+            if (deleteTargetId) {
+                await deleteEmployee(deleteTargetId);
+                if (form.dataset.editId == deleteTargetId) form.reset();
+                await saveAndRender();
+            }
+        } catch (err) {
+            alert(`Delete failed: ${err.message}`);
+            console.error('Delete failed:', err);
         }
         deleteModal.classList.add("hidden");
         deleteTargetId = null;

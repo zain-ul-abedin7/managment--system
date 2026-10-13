@@ -1,52 +1,40 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
 const cors = require('cors');
 const path = require('path');
+const { prisma } = require('./api/_lib/prisma');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'hello123',
-    database: process.env.DB_NAME || 'employee_management'
-});
-
 // Helper function to convert Department Name/ID to integer department_id
 async function resolveDepartmentId(deptInput) {
-    if (!deptInput) return 1; // Default fallback
-    if (!isNaN(deptInput)) return parseInt(deptInput, 10);
+    if (!deptInput) return 1;
+    if (!Number.isNaN(Number(deptInput))) return Number(deptInput);
 
-    try {
-        const [rows] = await db.query('SELECT id FROM departments WHERE name = ? LIMIT 1', [deptInput]);
-        if (rows.length > 0) return rows[0].id;
-    } catch (e) {
-        console.error("Department lookup error:", e.message);
-    }
-    return 1; // Fallback to ID 1 if not found
+    const row = await prisma.department.findFirst({
+        where: { name: String(deptInput) },
+        select: { id: true }
+    });
+    return row?.id || 1;
 }
 
 // Helper function to convert Role Title/ID to integer role_id
 async function resolveRoleId(roleInput) {
-    if (!roleInput) return 1; // Default fallback
-    if (!isNaN(roleInput)) return parseInt(roleInput, 10);
+    if (!roleInput) return 1;
+    if (!Number.isNaN(Number(roleInput))) return Number(roleInput);
 
-    try {
-        const [rows] = await db.query('SELECT id FROM roles WHERE title = ? LIMIT 1', [roleInput]);
-        if (rows.length > 0) return rows[0].id;
-    } catch (e) {
-        console.error("Role lookup error:", e.message);
-    }
-    return 1; // Fallback to ID 1 if not found
+    const row = await prisma.role.findFirst({
+        where: { title: String(roleInput) },
+        select: { id: true }
+    });
+    return row?.id || 1;
 }
 
 // GET /api/employees - Fetch active employees
 app.get('/api/health', async (req, res) => {
     try {
-        await db.query('SELECT 1');
+        await prisma.$queryRaw`SELECT 1`;
         res.json({ status: 'ok' });
     } catch (err) {
         res.status(503).json({ error: err.message });
@@ -55,15 +43,29 @@ app.get('/api/health', async (req, res) => {
 
 app.get('/api/employees', async (req, res) => {
     try {
-        const [rows] = await db.query(`
-            SELECT e.id, e.name, e.email, e.country_code, e.mobile_number, e.department_id, e.role_id,
-                   d.name AS department, r.title AS role, e.status
-            FROM employees e
-            LEFT JOIN departments d ON e.department_id = d.id
-            LEFT JOIN roles r ON e.role_id = r.id
-            WHERE e.status = 'active'
-        `);
-        res.json(rows);
+        const rows = await prisma.employee.findMany({
+            where: { status: 'active' },
+            include: {
+                department: { select: { name: true } },
+                role: { select: { title: true } }
+            },
+            orderBy: { id: 'desc' }
+        });
+
+        const response = rows.map(item => ({
+            id: item.id,
+            name: item.name,
+            email: item.email,
+            country_code: item.country_code,
+            mobile_number: item.mobile_number,
+            department_id: item.department_id,
+            role_id: item.role_id,
+            department: item.department?.name || null,
+            role: item.role?.title || null,
+            status: item.status
+        }));
+
+        res.json(response);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -73,18 +75,37 @@ app.get('/api/employees', async (req, res) => {
 app.post('/api/employees', async (req, res) => {
     const { name, email, country_code, mobile_number, department_id, role_id, department, role } = req.body;
     try {
-        // Resolve Department and Role IDs from either name or ID input
         const validDeptId = await resolveDepartmentId(department_id || department);
         const validRoleId = await resolveRoleId(role_id || role);
 
-        const [result] = await db.query(`
-            INSERT INTO employees (name, email, country_code, mobile_number, department_id, role_id, hire_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, CURDATE(), 'active')
-        `, [name, email, country_code || '+1', mobile_number, validDeptId, validRoleId]);
+        const result = await prisma.employee.create({
+            data: {
+                name,
+                email,
+                country_code: country_code || '+1',
+                mobile_number,
+                department_id: validDeptId,
+                role_id: validRoleId,
+                hire_date: new Date(),
+                status: 'active'
+            }
+        });
 
-        res.json({ id: result.insertId, name, email, country_code, mobile_number, department_id: validDeptId, role_id: validRoleId });
+        res.status(201).json({
+            id: result.id,
+            name: result.name,
+            email: result.email,
+            country_code: result.country_code,
+            mobile_number: result.mobile_number,
+            department_id: result.department_id,
+            role_id: result.role_id
+        });
     } catch (err) {
-        console.error("SQL Insert Error:", err.message);
+        if (err.code === 'P2002') {
+            res.status(409).json({ error: 'Email or mobile number already exists.' });
+            return;
+        }
+
         res.status(500).json({ error: err.message });
     }
 });
@@ -97,15 +118,30 @@ app.put('/api/employees/:id', async (req, res) => {
         const validDeptId = await resolveDepartmentId(department_id || department);
         const validRoleId = await resolveRoleId(role_id || role);
 
-        await db.query(`
-            UPDATE employees 
-            SET name = ?, email = ?, country_code = ?, mobile_number = ?, department_id = ?, role_id = ?
-            WHERE id = ?
-        `, [name, email, country_code || '+1', mobile_number, validDeptId, validRoleId, id]);
+        await prisma.employee.update({
+            where: { id: Number(id) },
+            data: {
+                name,
+                email,
+                country_code: country_code || '+1',
+                mobile_number,
+                department_id: validDeptId,
+                role_id: validRoleId
+            }
+        });
 
         res.json({ message: 'Employee updated successfully' });
     } catch (err) {
-        console.error("SQL Update Error:", err.message);
+        if (err.code === 'P2025') {
+            res.status(404).json({ error: 'Employee not found' });
+            return;
+        }
+
+        if (err.code === 'P2002') {
+            res.status(409).json({ error: 'Email or mobile number already exists.' });
+            return;
+        }
+
         res.status(500).json({ error: err.message });
     }
 });
@@ -114,9 +150,18 @@ app.put('/api/employees/:id', async (req, res) => {
 app.delete('/api/employees/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query(`UPDATE employees SET status = 'inactive' WHERE id = ?`, [id]);
+        await prisma.employee.update({
+            where: { id: Number(id) },
+            data: { status: 'inactive' }
+        });
+
         res.json({ message: 'Employee deactivated successfully' });
     } catch (err) {
+        if (err.code === 'P2025') {
+            res.status(404).json({ error: 'Employee not found' });
+            return;
+        }
+
         res.status(500).json({ error: err.message });
     }
 });
