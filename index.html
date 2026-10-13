@@ -12,7 +12,7 @@
 
     <div class="card">
         <h2 id="formTitle">Add Employee</h2>
-        <form id="employeeForm" method="post">    
+        <form id="employeeForm" action="javascript:void(0);">    
             <div class="field">
                 <input name="name" id="name" placeholder="Name" required pattern="^[A-Za-z ]{2,50}$">
                 <p class="field-error" id="nameError"></p>
@@ -97,6 +97,12 @@
         </div>
     </div>
 </div>
+
+<noscript>
+    <p style="max-width: 900px; margin: 12px auto; color: #b00020; font-weight: 600;">
+        JavaScript is required for this app. If actions fail, hard refresh (Ctrl+F5) and re-open the latest Vercel deployment URL.
+    </p>
+</noscript>
 
 <template id="employeeRowTemplate">
     <tr>
